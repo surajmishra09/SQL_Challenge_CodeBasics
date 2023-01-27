@@ -1,0 +1,368 @@
+
+1. Provide the list of markets in which customer "Atliq Exclusive" operates its
+business in the APAC region.
+
+-- Query 
+select * from dim_customer where customer="Atliq Exclusive" and region="APAC"
+
+-- Output: Following is the list of markets where Atliq operates its business in APAC region.
+------------|
+market      |
+------------|
+India       |
+------------|
+Indonesia   |
+------------| 
+Japan       |
+------------|
+Philiphines |
+------------|
+South Korea |
+------------|
+Australia   |
+------------|
+Newzealand  |
+------------|
+Bangladesh  |
+------------|
+--------------------------------------------------------------------------------------------------------------------------
+
+2. What is the percentage of unique product increase in 2021 vs. 2020? The
+final output contains these fields,
+	unique_products_2020
+      unique_products_2021
+      percentage_chg
+
+-- Approach:
+
+-- First I found out distinct products for the fiscal year 2020 and made that query as year_count
+-- Similary, I found out distinct products for the fiscal year 2021 and made that query also as year_count
+-- then just extracted the required fields from the two tables and got the final output.
+
+
+-- 	Query
+WITH year_counts AS (
+  SELECT 
+    (SELECT count(distinct product_code) FROM 
+fact_gross_price WHERE fiscal_year = 2020) as unique_product_2020,
+    (SELECT count(distinct product_code) FROM 
+fact_gross_price WHERE fiscal_year = 2021) as 
+unique_product_2021
+)
+SELECT
+unique_product_2020,
+unique_product_2021,
+(unique_product_2021 - unique_product_2020) / unique_product_2020 * 100 as diff_in_percentage
+FROM year_counts;
+
+-- Output: so the no of unique products in 2021 has increased by 36.33% in comparision to last year.
+ 
+|------------------------------------------------------------------------------------
+| 	unique_product_count_2020 |	unique_product_count_2021 | percentage_chg  |	
+|-----------------------------+-----------------------------------------------------|
+|       245		          |	     334	          |    36.33	    |
+-----------------------------------------------+------------------------------------|
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+3. Provide a report with all the unique product counts for each segment and
+sort them in descending order of product counts. The final output contains
+2 fields,
+    segment
+    product_count
+
+-- Query 
+SELECT product_code as segment, COUNT(*) as product_count 
+FROM fact_gross_price
+GROUP BY product_code
+order by product_count desc;
+
+Output: Notebook segament has most number of unqiue products while networking has least.
+
+------------------------------|
+segment	 |product_count|
+----------------------------- |
+Notebook	 | 129        |
+Accessories	 | 116        |
+Peripherals	 | 84         |
+Desktop	 | 32         |
+Storage	 | 27         |
+Networking	 | 9          |
+------------------------------|
+------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+4. Follow-up: Which segment had the most increase in unique products in
+2021 vs 2020? The final output contains these fields,
+segment
+    product_count_2020
+    product_count_2021
+difference
+
+-- Approach:
+
+-- Query
+SELECT 
+product_code,
+MAX(CASE WHEN fiscal_year = 2020 THEN COUNT(product_code) END) as product_count_2020,
+MAX(CASE WHEN fiscal_year = 2021 THEN COUNT(product_code) END) as product_count_2021,
+(MAX(CASE WHEN fiscal_year = 2020 THEN COUNT(product_code) END) - MAX(CASE WHEN fiscal_year = 2021 THEN COUNT(product_code) END)) as difference
+FROM fact_gross_price
+GROUP BY product_code
+ORDER BY difference DESC
+LIMIT 1;
+
+-- Output:  Accessories segment has the most increase in unqiue products as 34 new unique products were added to this segment which is most among all the segments.
+ 
+---------------------------------------------------------------------------| 
+  segment     | product_count_2020 |	product_count_2021|difference |
+--------------|--------------------|-----------------------|---------------|  
+Accessories   |          69	   |    103	           |   34          |
+--------------|--------------------|-----------------------|---------------|
+Notebook      |          92	   |    108	           |   16          |
+--------------|--------------------|-----------------------|---------------|
+Peripherals   |          59	   |     75	           |   16          |
+--------------|--------------------|-----------------------|---------------|
+Desktop	  |           7	   |     22	           |   15          |
+--------------|--------------------|-----------------------|---------------|
+Storage	  |          12	   |     17	           |    5          |
+--------------|--------------------|-----------------------|---------------|
+Networking    |           6	   |      9	           |   3           |
+--------------|--------------------|-----------------------|---------------|
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+5. Get the products that have the highest and lowest manufacturing costs.
+The final output should contain these fields,
+    product_code
+    product
+    manufacturing_cost
+
+-- Approach:
+
+-- First I joined the product and manufacturing cost tables
+-- then used order by desc on manufacturing cost field to find product with highest cost
+-- Similary found product with highest cost by using ORDER BY ASC
+-- Then finally just made union of the two queries
+
+-- Query
+(select fact_manufacturing_cost.product_code, dim_product.product, fact_manufacturing_cost.manufacturing_cost from fact_manufacturing_cost inner join dim_product where fact_manufacturing_cost.product_code=dim_product.product_code 
+order by fact_manufacturing_cost.manufacturing_cost desc limit 1)
+union
+(select fact_manufacturing_cost.product_code, dim_product.product, fact_manufacturing_cost.manufacturing_cost from fact_manufacturing_cost inner join dim_product where fact_manufacturing_cost.product_code=dim_product.product_code 
+order by fact_manufacturing_cost.manufacturing_cost asc limit 1);
+
+-- Output:  Product AQ HOME Allin1 Gen 2 has the higest manufacturing cost whereas AQ Master wired x1 Ms has the least.
+
+-------------------------------------------|---------------------------|
+product_code  |	       product	       |     manufacturing_cost    |
+--------------|----------------------------|---------------------------|
+A6120110206   |   AQ HOME Allin1 Gen 2	 |        240.5364           |
+A2118150101   |   AQ Master wired x1 Ms	 |          0.8920           |
+--------------|----------------------------|---------------------------|
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+6. Generate a report which contains the top 5 customers who received an
+average high pre_invoice_discount_pct for the fiscal year 2021 and in the
+Indian market. The final output contains these fields,
+    customer_code
+    customer
+    average_discount_percentage
+
+-- Approach:
+
+-- Firstly I found out avg of pre_invoice_discunt_pct from fact_pre_invoice_deductions to use this query later as subquery
+-- Then joined 2 tables cutomer and pre_invoice_dedcutions
+-- applied requried conditions in the where clause and also used earlier found query as subquery to find customers who have recevied more than avg pre invoice dedcutions
+-- lastly used order by desc and limit 5 to find such top 5 customers
+
+
+-- Query
+select fact_pre_invoice_deductions.customer_code, dim_customer.customer, fact_pre_invoice_deductions.pre_invoice_discount_pct as average_discount_percentage from fact_pre_invoice_deductions 
+inner join dim_customer where fact_pre_invoice_deductions.customer_code=dim_customer.customer_code order by pre_invoice_discount_pct desc limit 5;
+
+-- Output: Below are the top 5 customers who received an average high pre_invoice_discount_pct for the fiscal year 2021 in Indian market
+
+---------------------------------------------------------------|
+customer_code |	 customer	|  average_discount_percentage |
+---------------------------------------------------------------|
+90002009      |   Flipkart	|     0.3083                   |
+90002006      |   Viveks	|     0.3038                   |
+90002003      |   Ezone	        |     0.3028                   |
+90002002      |   Croma	        |     0.3025                   |
+90002016      |   Amazon 	|     0.2933                   | 
+--------------|-----------------|------------------------------|
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+
+7. Get the complete report of the Gross sales amount for the customer “Atliq
+Exclusive” for each month. This analysis helps to get an idea of low and
+high-performing months and take strategic decisions.
+The final report contains these columns:
+    Month
+    Year
+    Gross sales Amount
+
+Apporach:
+
+--  First I joined customer and sales monthly table using customer code
+-- Then this table was joined to gross price table using two columns product_code,fiscal_year as same product has different price for different fiscal year
+-- Applied the filter condition dor Atliq Exclusive
+-- Found out sales amount as product of  sold_quantity and gross_price
+-- treated this entire query as CTE(t1)
+
+
+-- Query
+select month(fsm.date) as Month, year(fsm.date) as year, 
+fgb.gross_price as Gross_sales_Amount from fact_sales_monthly as fsm inner join 
+fact_gross_price as fgp on fgb.product_code=fsm.product_code;
+
+ -- Output: Gross sales amount for Atliq Exclusive was highest in November 2021 and was lowest in March 2020.
+ 
+----------|-----------------|-----------------------|
+month     |  fiscal_year    |   gross_sales_amount  |
+------    |-------------    |-----------------------|
+11	  |  2021	    |     20464999.10       |
+10	  |  2021	    |     13218636.20       |
+12	  |  2021	    |     12944659.65       |
+1	  |  2021	    |     12399392.98       |
+9	  |  2021	    |     12353509.79       |
+5	  |  2021	    |     12150225.01       |
+3	  |  2021	    |     12144061.25       |
+7	  |  2021	    |     12092346.32       |
+2	  |  2021	    |     10129735.57       |
+6	  |  2021	    |      9824521.01       |
+11	  |  2020	    |      7522892.56       |
+4	  |  2021	    |      7311999.95       |
+8	  |  2021	    |      7178707.59       |
+10	  |  2020	    |      5135902.35       |
+12	  |  2020	    |      4830404.73       |
+1	  |  2020	    |      4740600.16       |
+9	  |  2020	    |      4496259.67       |
+2	  |  2020	    |      3996227.77       |
+8	  |  2020	    |      2786648.26       |
+7	  |  2020	    |      2551159.16       |
+6	  |  2020	    |      1695216.60       |
+5	  |  2020	    |       783813.42       |
+4	  |  2020	    |       395035.35       |
+3	  |  2020	    |       378770.97       |
+----------------------------------------------------|
+ 
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+8. In which quarter of 2020, got the maximum total_sold_quantity? The final
+output contains these fields sorted by the total_sold_quantity,
+    Quarter
+    total_sold_quantity
+
+-- Approach:
+
+-- Since there is date column directly I needed to use CASE to differentiate quarters as per month
+-- applied where condition for the fiscal_year 2020
+-- finally used aggregate function sum and group by to get final output
+
+-- Query
+SELECT QUARTER(fsm.date) as Quarter, fgp.gross_price as total_sales_quantity 
+FROM fact_gross_price  as fgp
+INNER JOIN fact_sales_monthly as fsm
+ON fgp.product_code=fsm.product_code;
+
+-- Output: Quarter 1 had the higest sold quantity for the fiscal_year 2020
+---------------------------------|
+Quarter	 |  total_sold_quantity  |
+---------|-----------------------|
+Q1	 |     7005619           |
+Q2	 |     6649642           |
+Q4	 |     5042541           |
+Q3	 |     2075087           |
+---------|-----------------------|
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+9. Which channel helped to bring more gross sales in the fiscal year 2021
+and the percentage of contribution? The final output contains these fields,
+    channel
+    gross_sales_mln
+    percentage
+
+
+-- Query
+SELECT dim_product.category as channel, SUM(fact_gross_price.gross_price) as gross_sales_mln
+FROM fact_gross_price
+INNER JOIN dim_product ON fact_gross_price.product_code = dim_product.product_code
+WHERE fact_gross_price.fiscal_year=2021
+GROUP BY dim_product.category
+ORDER BY gross_sales_mln DESC
+LIMIT 1;
+
+-- Output: Retailer channel has the higest contribution followed by Direct for the fiscal year 2021. Distributor had the least contribution for that fiscal year.
+
+------------|------------------|-----------------|
+channel	    | gross_sales_mln  |    precentage   |
+------------|------------------|-----------------|
+Direct	    |     257.53       |     15.47       |
+------------|------------------|-----------------|
+Retailer    |    1219.08       |     73.23       |
+------------|------------------|-----------------|
+Distributor |    188.03	       |    11.30        |
+------------|------------------|-----------------|
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+10. Get the Top 3 products in each division that have a high
+total_sold_quantity in the fiscal_year 2021? The final output contains these
+    fields,
+    division
+    product_code
+    product
+    total_sold_quantity
+rank_order
+
+-- Query
+WITH product_sales as (
+  SELECT 
+    dim_product.division, 
+    dim_product.product, 
+    dim_product.product_code as product_code, 
+    SUM(fact_sales_monthly.sold_quantity) as total_sold,
+    ROW_NUMBER() OVER (PARTITION BY dim_product.division ORDER BY SUM(fact_sales_monthly.sold_quantity) DESC) as rank_order
+  FROM dim_product
+  INNER JOIN fact_sales_monthly
+  ON dim_product.product_code = fact_sales_monthly.product_code
+  WHERE fact_sales_monthly.fiscal_year = 2021
+  GROUP BY dim_product.division, dim_product.product_code, dim_product.product
+)
+SELECT division, product_code, product, total_sold, rank_order
+FROM product_sales
+WHERE rank_order <= 3
+ORDER BY division,rank_order;
+
+-- Output: Top 3 products in each division are as shown below
+
+---------|------------------|---------------------------|-----------------------|-------------|
+division | 	product_code|	   product	              |    total_qty_sold	  |  rank_order |
+---------|----------------- |---------------------------|-----------------------|-------------|
+N & S	 |   A6720160103    |    AQ Pen Drive 2 IN 1	  |  701373	              |      1      |
+N & S	 |   A6818160202    |	 AQ Pen Drive DRC	        |  688003	              |      2      |
+N & S	 |   A6819160203    |	 AQ Pen Drive DRC	        |  676245	              |      3      |
+---------|------------------|---------------------------|-----------------------|-------------|
+P & A	 |   A2319150302    |    AQ Gamers Ms	        |          428498	  |      1      |
+P & A	 |   A2520150501    |    AQ Maxima Ms	        |          419865	  |      2      |
+P & A	 |   A2520150504    |    AQ Maxima Ms	        |          419471	  |      3      |
+---------|------------------|---------------------------|-----------------------|-------------|
+PC	 |   A4218110202    |    AQ Digit	              |          17434	  |      1      |
+PC	 |   A4319110306    |    AQ Velocity	        |          17280	  |      2      |
+PC	 |   A4218110208    |    AQ Digit	              |          17275	  |      3      |
+---------|------------------|---------------------------|-----------------------|-------------|
+----------------------------------------------------------------------------------------------------------------------------------------------------------------  
+
+
