@@ -1,14 +1,10 @@
 # SQL_Challenge
 
-In this project I have completed the SQL project challenge hosted by codebasics. We need to provide insights to management in consumer goods domain.
-
-I have used the below tools for completing this project
-1.    MySQL : For Querying Data
-2.    MS PowerPoint : For Presenting insights.
+"I presented insights to management by executing SQL queries, and then created a visually appealing presentation using MS Word to effectively convey the insights.
 
 
 # Dataset
-This overview of the tables found in the 'gdb023' (atliq_hardware_db) database. It includes information for six main tables:
+This Dataset are provided by codebasics. Overview of the tables found in the 'gdb023' (atliq_hardware_db) database. It includes information for six main tables:
 
 1. dim_customer: contains customer-related data
 2. dim_product: contains product-related data
