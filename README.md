@@ -2,11 +2,13 @@
 
 "As part of the codebasics November month resume challenge, I have worked on this analysis project. I presented insights to management by executing SQL queries, and then created a visually appealing presentation using MS Word to effectively convey the insights.
 
-Link to the [Challenge](https://codebasics.io/challenge/codebasics-resume-project-challenge)
+Link to the [Solved query with Result](https://github.com/surajmishra09/SQL_Project/blob/main/Solved_Queries_with_result_Codebasics_SQL_Challenge.txt)
 
 Link to the [Word Presentation](https://github.com/surajmishra09/SQL_Project/blob/main/Presentation%20for%20Atliq%20Hardware%20Managment.pdf)
 
-Link to the [Solved query with Result](https://github.com/surajmishra09/SQL_Project/blob/main/Solved_Queries_with_result_Codebasics_SQL_Challenge.txt)
+Link to the [Challenge](https://codebasics.io/challenge/codebasics-resume-project-challenge)
+
+Link to the [Certificate](https://drive.google.com/file/d/1bOo1zbkA8N1o4euljcvB-XttWcL4ll87/view?usp=sharing)
 
 # Dataset
 This Dataset are provided by codebasics in (.sql format). Overview of the tables found in the database. It includes information for six main tables:
